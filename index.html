@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTK Web Control Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #4299e1;
+        }
+
+        .status-item .label {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+
+        .status-item .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .status-item.connected {
+            border-left-color: #48bb78;
+        }
+
+        .status-item.error {
+            border-left-color: #f56565;
+        }
+
+        .status-item.warning {
+            border-left-color: #ed8936;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+
+        .map-container {
+            height: 400px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-placeholder {
+            text-align: center;
+            color: #718096;
+        }
+
+        .satellite-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .satellite-bar {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .satellite-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            transition: width 0.3s ease;
+        }
+
+        .console {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .console-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .console-entry.info {
+            color: #63b3ed;
+        }
+
+        .console-entry.success {
+            color: #68d391;
+        }
+
+        .console-entry.error {
+            color: #fc8181;
+        }
+
+        .console-entry.warning {
+            color: #f6ad55;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4299e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #3182ce);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛰️ RTK Web Control Center</h1>
+            <p>高精度实时动态定位系统控制台</p>
+        </div>
+
+        <div class="dashboard">
+            <!-- 系统状态面板 -->
+            <div class="card">
+                <h3>📊 系统状态</h3>
+                <div class="status-grid">
+                    <div class="status-item" id="rtk-status">
+                        <div class="label">RTK状态</div>
+                        <div class="value" id="rtk-status-value">未连接</div>
+                    </div>
+                    <div class="status-item" id="position-status">
+                        <div class="label">定位状态</div>
+                        <div class="value" id="position-status-value">无定位</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="label">纬度</div>
+                        <div class="value" id="latitude">--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="label">经度</div>
+                        <div class="value" id="longitude">--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="label">精度</div>
+                        <div class="value" id="accuracy">--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="label">卫星数</div>
+                        <div class="value" id="satellites">0</div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="connectRTK()">连接RTK</button>
+                    <button class="btn btn-success" onclick="startSurvey()">开始测量</button>
+                    <button class="btn btn-danger" onclick="disconnectRTK()">断开连接</button>
+                </div>
+            </div>
+
+            <!-- NTRIP配置面板 -->
+            <div class="card">
+                <h3>🌐 NTRIP配置</h3>
+                <div class="form-group">
+                    <label for="ntrip-host">服务器地址</label>
+                    <input type="text" id="ntrip-host" placeholder="rtk.ntrip.qxwz.com" value="rtk.ntrip.qxwz.com">
+                </div>
+                <div class="form-group">
+                    <label for="ntrip-port">端口</label>
+                    <input type="number" id="ntrip-port" placeholder="8002" value="8002">
+                </div>
+                <div class="form-group">
+                    <label for="ntrip-username">用户名</label>
+                    <input type="text" id="ntrip-username" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="ntrip-password">密码</label>
+                    <input type="password" id="ntrip-password" placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label for="ntrip-mountpoint">挂载点</label>
+                    <input type="text" id="ntrip-mountpoint" placeholder="RTCM32_GGB" value="RTCM32_GGB">
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="connectNTRIP()">连接NTRIP</button>
+                    <button class="btn btn-success" onclick="saveConfig()">保存配置</button>
+                </div>
+            </div>
+
+            <!-- 地图显示面板 -->
+            <div class="card">
+                <h3>🗺️ 位置地图</h3>
+                <div class="map-container">
+                    <div class="map-placeholder">
+                        <div id="map-status">地图加载中...</div>
+                        <div class="loading" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="centerMap()">居中定位</button>
+                    <button class="btn btn-success" onclick="toggleTracking()">跟踪模式</button>
+                    <button class="btn btn-primary" onclick="exportPosition()">导出位置</button>
+                </div>
+            </div>
+
+            <!-- 卫星信息面板 -->
+            <div class="card">
+                <h3>🛰️ 卫星信息</h3>
+                <div id="satellite-list">
+                    <div class="satellite-info">
+                        <div class="status-item">
+                            <div class="label">GPS卫星</div>
+                            <div class="value" id="gps-sats">0/0</div>
+                            <div class="satellite-bar">
+                                <div class="satellite-bar-fill" id="gps-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="label">北斗卫星</div>
+                            <div class="value" id="bds-sats">0/0</div>
+                            <div class="satellite-bar">
+                                <div class="satellite-bar-fill" id="bds-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="label">GLONASS</div>
+                            <div class="value" id="glo-sats">0/0</div>
+                            <div class="satellite-bar">
+                                <div class="satellite-bar-fill" id="glo-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <div class="label">Galileo</div>
+                            <div class="value" id="gal-sats">0/0</div>
+                            <div class="satellite-bar">
+                                <div class="satellite-bar-fill" id="gal-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="signal-quality" style="width: 0%"></div>
+                </div>
+                <div style="text-align: center; margin-top: 10px; color: #718096;">
+                    信号质量: <span id="signal-quality-text">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制台输出 -->
+        <div class="card">
+            <h3>📝 系统日志</h3>
+            <div class="console" id="console">
+                <div class="console-entry info">系统初始化完成</div>
+                <div class="console-entry info">等待RTK设备连接...</div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="clearConsole()">清空日志</button>
+                <button class="btn btn-success" onclick="exportLog()">导出日志</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let rtkConnection = null;
+        let ntripConnection = null;
+        let isTracking = false;
+        let currentPosition = null;
+        let surveyInProgress = false;
+
+        // 日志系统
+        function addLog(message, type = 'info') {
+            const console = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.className = `console-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // RTK连接
+        async function connectRTK() {
+            addLog('正在连接RTK设备...', 'info');
+            
+            try {
+                // 模拟RTK连接过程
+                await simulateRTKConnection();
+                
+                // 更新状态
+                document.getElementById('rtk-status').className = 'status-item connected';
+                document.getElementById('rtk-status-value').textContent = '已连接';
+                
+                addLog('RTK设备连接成功', 'success');
+                
+                // 开始接收数据
+                startRTKDataStream();
+                
+            } catch (error) {
+                addLog(`RTK连接失败: ${error.message}`, 'error');
+                document.getElementById('rtk-status').className = 'status-item error';
+                document.getElementById('rtk-status-value').textContent = '连接失败';
+            }
+        }
+
+        // 模拟RTK连接
+        function simulateRTKConnection() {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    // 模拟90%成功率
+                    if (Math.random() > 0.1) {
+                        resolve();
+                    } else {
+                        reject(new Error('设备未响应'));
+                    }
+                }, 2000);
+            });
+        }
+
+        // 开始RTK数据流
+        function startRTKDataStream() {
+            // 模拟实时数据更新
+            setInterval(() => {
+                updatePosition();
+                updateSatellites();
+                updateSignalQuality();
+            }, 1000);
+        }
+
+        // 更新位置信息
+        function updatePosition() {
+            // 模拟RTK定位数据
+            const baseLat = 39.9042 + (Math.random() - 0.5) * 0.001;
+            const baseLng = 116.4074 + (Math.random() - 0.5) * 0.001;
+            const accuracy = Math.random() * 0.02 + 0.005; // 1-3cm精度
+            
+            currentPosition = {
+                latitude: baseLat,
+                longitude: baseLng,
+                accuracy: accuracy
+            };
+
+            document.getElementById('latitude').textContent = baseLat.toFixed(8);
+            document.getElementById('longitude').textContent = baseLng.toFixed(8);
+            document.getElementById('accuracy').textContent = (accuracy * 100).toFixed(1) + ' cm';
+            
+            // 更新定位状态
+            const positionStatus = document.getElementById('position-status');
+            const positionStatusValue = document.getElementById('position-status-value');
+            
+            if (accuracy < 0.02) {
+                positionStatus.className = 'status-item connected';
+                positionStatusValue.textContent = 'RTK固定解';
+            } else if (accuracy < 0.1) {
+                positionStatus.className = 'status-item warning';
+                positionStatusValue.textContent = 'RTK浮点解';
+            } else {
+                positionStatus.className = 'status-item error';
+                positionStatusValue.textContent = '单点定位';
+            }
+        }
+
+        // 更新卫星信息
+        function updateSatellites() {
+            const gpsSats = Math.floor(Math.random() * 8) + 4;
+            const bdsSats = Math.floor(Math.random() * 6) + 3;
+            const gloSats = Math.floor(Math.random() * 5) + 2;
+            const galSats = Math.floor(Math.random() * 4) + 1;
+            
+            const totalSats = gpsSats + bdsSats + gloSats + galSats;
+            
+            document.getElementById('satellites').textContent = totalSats;
+            document.getElementById('gps-sats').textContent = `${gpsSats}/${gpsSats}`;
+            document.getElementById('bds-sats').textContent = `${bdsSats}/${bdsSats}`;
+            document.getElementById('glo-sats').textContent = `${gloSats}/${gloSats}`;
+            document.getElementById('gal-sats').textContent = `${galSats}/${galSats}`;
+            
+            // 更新进度条
+            document.getElementById('gps-bar').style.width = `${(gpsSats / 12) * 100}%`;
+            document.getElementById('bds-bar').style.width = `${(bdsSats / 10) * 100}%`;
+            document.getElementById('glo-bar').style.width = `${(gloSats / 8) * 100}%`;
+            document.getElementById('gal-bar').style.width = `${(galSats / 6) * 100}%`;
+        }
+
+        // 更新信号质量
+        function updateSignalQuality() {
+            const quality = Math.floor(Math.random() * 30) + 70; // 70-100%
+            document.getElementById('signal-quality').style.width = `${quality}%`;
+            document.getElementById('signal-quality-text').textContent = `${quality}%`;
+        }
+
+        // NTRIP连接
+        async function connectNTRIP() {
+            const host = document.getElementById('ntrip-host').value;
+            const port = document.getElementById('ntrip-port').value;
+            const username = document.getElementById('ntrip-username').value;
+            const password = document.getElementById('ntrip-password').value;
+            const mountpoint = document.getElementById('ntrip-mountpoint').value;
+            
+            if (!host || !port || !username || !password || !mountpoint) {
+                addLog('请填写完整的NTRIP配置信息', 'warning');
+                return;
+            }
+            
+            addLog(`正在连接NTRIP服务器: ${host}:${port}`, 'info');
+            
+            try {
+                // 模拟NTRIP连接
+                await simulateNTRIPConnection();
+                
+                addLog('NTRIP连接成功', 'success');
+                addLog(`已挂载到挂载点: ${mountpoint}`, 'info');
+                
+            } catch (error) {
+                addLog(`NTRIP连接失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 模拟NTRIP连接
+        function simulateNTRIPConnection() {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (Math.random() > 0.2) {
+                        resolve();
+                    } else {
+                        reject(new Error('认证失败'));
+                    }
+                }, 3000);
+            });
+        }
+
+        // 开始测量
+        function startSurvey() {
+            if (!rtkConnection) {
+                addLog('请先连接RTK设备', 'warning');
+                return;
+            }
+            
+            surveyInProgress = true;
+            addLog('开始RTK测量...', 'info');
+            
+            // 模拟测量过程
+            let progress = 0;
+            const surveyInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(surveyInterval);
+                    surveyInProgress = false;
+                    addLog('测量完成', 'success');
+                }
+            }, 500);
+        }
+
+        // 断开RTK连接
+        function disconnectRTK() {
+            if (rtkConnection) {
+                rtkConnection = null;
+                document.getElementById('rtk-status').className = 'status-item';
+                document.getElementById('rtk-status-value').textContent = '未连接';
+                document.getElementById('position-status').className = 'status-item';
+                document.getElementById('position-status-value').textContent = '无定位';
+                addLog('RTK设备已断开', 'info');
+            }
+        }
+
+        // 保存配置
+        function saveConfig() {
+            const config = {
+                ntrip: {
+                    host: document.getElementById('ntrip-host').value,
+                    port: document.getElementById('ntrip-port').value,
+                    username: document.getElementById('ntrip-username').value,
+                    password: document.getElementById('ntrip-password').value,
+                    mountpoint: document.getElementById('ntrip-mountpoint').value
+                }
+            };
+            
+            localStorage.setItem('rtk-config', JSON.stringify(config));
+            addLog('配置已保存', 'success');
+        }
+
+        // 加载配置
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('rtk-config');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                document.getElementById('ntrip-host').value = config.ntrip.host || '';
+                document.getElementById('ntrip-port').value = config.ntrip.port || '';
+                document.getElementById('ntrip-username').value = config.ntrip.username || '';
+                document.getElementById('ntrip-password').value = config.ntrip.password || '';
+                document.getElementById('ntrip-mountpoint').value = config.ntrip.mountpoint || '';
+                addLog('配置已加载', 'info');
+            }
+        }
+
+        // 地图相关功能
+        function centerMap() {
+            if (currentPosition) {
+                addLog(`地图居中: ${currentPosition.latitude.toFixed(6)}, ${currentPosition.longitude.toFixed(6)}`, 'info');
+                document.getElementById('map-status').textContent = `当前位置: ${currentPosition.latitude.toFixed(6)}, ${currentPosition.longitude.toFixed(6)}`;
+            } else {
+                addLog('暂无位置信息', 'warning');
+            }
+        }
+
+        function toggleTracking() {
+            isTracking = !isTracking;
+            addLog(isTracking ? '跟踪模式已开启' : '跟踪模式已关闭', 'info');
+        }
+
+        function exportPosition() {
+            if (currentPosition) {
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    latitude: currentPosition.latitude,
+                    longitude: currentPosition.longitude,
+                    accuracy: currentPosition.accuracy
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rtk-position-${Date.now()}.json`;
+                a.click();
+                
+                addLog('位置数据已导出', 'success');
+            } else {
+                addLog('暂无位置数据可导出', 'warning');
+            }
+        }
+
+        // 控制台功能
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+            addLog('日志已清空', 'info');
+        }
+
+        function exportLog() {
+            const consoleContent = document.getElementById('console').innerText;
+            const blob = new Blob([consoleContent], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rtk-log-${Date.now()}.txt`;
+            a.click();
+            
+            addLog('日志已导出', 'success');
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            loadConfig();
+            addLog('RTK Web Control Center 启动完成', 'success');
+        });
+
+        // 添加键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'c':
+                        e.preventDefault();
+                        connectRTK();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        disconnectRTK();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        startSurvey();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
